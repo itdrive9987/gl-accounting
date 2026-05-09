@@ -1,13 +1,326 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GL - Accounting</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GL - Accounting App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .tab-active { border-bottom: 3px solid #10b981; color: #10b981; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
+            <div class="p-6 border-b border-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl">📒</div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-emerald-400">GL</h1>
+                        <p class="text-xs text-gray-500 -mt-1">Accounting</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="flex-1 p-4">
+                <a onclick="switchTab(0)" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 rounded-2xl mb-1 tab-active" id="tab-0">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                <a onclick="switchTab(1)" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 rounded-2xl mb-1" id="tab-1">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="font-medium">Input Transaksi</span>
+                </a>
+                <a onclick="switchTab(2)" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 rounded-2xl mb-1" id="tab-2">
+                    <i class="fa-solid fa-balance-scale"></i>
+                    <span class="font-medium">Neraca</span>
+                </a>
+                <a onclick="switchTab(3)" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 rounded-2xl mb-1" id="tab-3">
+                    <i class="fa-solid fa-book"></i>
+                    <span class="font-medium">Buku Besar</span>
+                </a>
+                <a onclick="switchTab(4)" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 rounded-2xl" id="tab-4">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                    <span class="font-medium">Arus Kas</span>
+                </a>
+            </nav>
+            
+            <div class="p-4 border-t border-gray-800">
+                <div class="text-xs text-gray-500 px-4">Perusahaan Demo</div>
+                <div class="text-sm font-medium px-4">PT. Khaos Corp</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <!-- Top bar -->
+            <div class="h-14 border-b border-gray-800 bg-gray-900 px-8 flex items-center justify-between">
+                <div class="flex items-center gap-8">
+                    <h2 id="page-title" class="text-xl font-semibold">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div onclick="refreshData()" class="cursor-pointer flex items-center gap-2 text-emerald-400 hover:text-emerald-300">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span class="text-sm">Refresh</span>
+                    </div>
+                    <div class="w-8 h-8 bg-gray-700 rounded-2xl flex items-center justify-center cursor-pointer">
+                        👤
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 p-8 overflow-auto" id="content-area">
+                <!-- Will be filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dummy data
+        let transactions = [
+            {id: 1, date: "2026-05-01", desc: "Penjualan produk A", type: "income", amount: 45000000, account: "Pendapatan"},
+            {id: 2, date: "2026-05-02", desc: "Gaji karyawan", type: "expense", amount: 15000000, account: "Beban Gaji"},
+            {id: 3, date: "2026-05-03", desc: "Sewa kantor", type: "expense", amount: 8000000, account: "Beban Sewa"},
+            {id: 4, date: "2026-05-04", desc: "Penjualan produk B", type: "income", amount: 32000000, account: "Pendapatan"}
+        ];
+
+        let accounts = [
+            {name: "Kas", balance: 120000000},
+            {name: "Bank BCA", balance: 85000000},
+            {name: "Piutang Usaha", balance: 35000000},
+            {name: "Utang Usaha", balance: -18000000}
+        ];
+
+        function renderDashboard() {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-gray-900 p-6 rounded-3xl">
+                        <div class="text-emerald-400 text-sm">Total Aset</div>
+                        <div class="text-4xl font-bold mt-2">Rp 240.000.000</div>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-3xl">
+                        <div class="text-red-400 text-sm">Total Liabilitas</div>
+                        <div class="text-4xl font-bold mt-2">Rp 45.000.000</div>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-3xl">
+                        <div class="text-emerald-400 text-sm">Ekuitas</div>
+                        <div class="text-4xl font-bold mt-2">Rp 195.000.000</div>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-3xl">
+                        <div class="text-amber-400 text-sm">Laba Bulan Ini</div>
+                        <div class="text-4xl font-bold mt-2">Rp 42.000.000</div>
+                    </div>
+                </div>
+
+                <div class="mt-10">
+                    <h3 class="text-lg font-semibold mb-4">Transaksi Terbaru</h3>
+                    <div class="bg-gray-900 rounded-3xl overflow-hidden">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left p-5">Tanggal</th>
+                                    <th class="text-left p-5">Keterangan</th>
+                                    <th class="text-left p-5">Akun</th>
+                                    <th class="text-right p-5">Jumlah</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-table" class="divide-y divide-gray-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderInput() {
+            return `
+                <div class="max-w-2xl mx-auto bg-gray-900 p-8 rounded-3xl">
+                    <h3 class="text-2xl font-semibold mb-6">Input Transaksi Baru</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Tanggal</label>
+                            <input id="date" type="date" value="2026-05-09" class="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Keterangan</label>
+                            <input id="desc" type="text" placeholder="Contoh: Pembelian barang" class="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 text-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Tipe</label>
+                                <select id="type" class="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 text-white">
+                                    <option value="income">Pemasukan</option>
+                                    <option value="expense">Pengeluaran</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Jumlah (Rp)</label>
+                                <input id="amount" type="number" placeholder="5000000" class="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 text-white">
+                            </div>
+                        </div>
+                        <button onclick="addTransaction()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-5 rounded-3xl text-lg">Simpan Transaksi</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderNeraca() {
+            return `
+                <div class="bg-gray-900 p-8 rounded-3xl">
+                    <h3 class="text-2xl font-semibold mb-6">Neraca Saldo - 09 Mei 2026</h3>
+                    <div class="grid grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="font-medium text-emerald-400 mb-4">Aset</h4>
+                            ${accounts.map(a => `<div class="flex justify-between py-3 border-b border-gray-700"><span>${a.name}</span><span>Rp ${a.balance.toLocaleString('id-ID')}</span></div>`).join('')}
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-red-400 mb-4">Liabilitas & Ekuitas</h4>
+                            <div class="flex justify-between py-3 border-b border-gray-700"><span>Utang Usaha</span><span>Rp 18.000.000</span></div>
+                            <div class="flex justify-between py-3 border-b border-gray-700 font-bold"><span>Ekuitas</span><span>Rp 195.000.000</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBukuBesar() {
+            let html = `<div class="bg-gray-900 p-8 rounded-3xl">
+                <h3 class="text-2xl font-semibold mb-6">Buku Besar</h3>
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-700">
+                            <th class="text-left p-4">Tanggal</th>
+                            <th class="text-left p-4">Keterangan</th>
+                            <th class="text-right p-4">Debit</th>
+                            <th class="text-right p-4">Kredit</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700">`;
+            transactions.forEach(t => {
+                const debit = t.type === 'income' ? '' : `Rp ${t.amount.toLocaleString('id-ID')}`;
+                const kredit = t.type === 'income' ? `Rp ${t.amount.toLocaleString('id-ID')}` : '';
+                html += `<tr>
+                    <td class="p-4">${t.date}</td>
+                    <td class="p-4">${t.desc}</td>
+                    <td class="p-4 text-right text-red-400">${debit}</td>
+                    <td class="p-4 text-right text-emerald-400">${kredit}</td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        function renderArusKas() {
+            return `
+                <div class="bg-gray-900 p-8 rounded-3xl">
+                    <h3 class="text-2xl font-semibold mb-6">Arus Kas - Mei 2026</h3>
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center bg-gray-800 p-6 rounded-3xl">
+                            <div>Saldo Awal</div>
+                            <div class="font-bold">Rp 80.000.000</div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="text-emerald-400">Pemasukan</div>
+                            <div class="font-bold text-emerald-400">Rp 77.000.000</div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="text-red-400">Pengeluaran</div>
+                            <div class="font-bold text-red-400">Rp 23.000.000</div>
+                        </div>
+                        <div class="border-t border-gray-700 pt-6 flex justify-between text-xl font-semibold">
+                            <div>Saldo Akhir</div>
+                            <div class="text-emerald-400">Rp 134.000.000</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function switchTab(n) {
+            // Remove active from all
+            document.querySelectorAll('a').forEach(a => a.classList.remove('tab-active'));
+            // Add to current
+            document.getElementById('tab-' + n).classList.add('tab-active');
+
+            const content = document.getElementById('content-area');
+            const title = document.getElementById('page-title');
+
+            if (n === 0) {
+                title.textContent = 'Dashboard';
+                content.innerHTML = renderDashboard();
+                renderRecentTable();
+            } else if (n === 1) {
+                title.textContent = 'Input Transaksi';
+                content.innerHTML = renderInput();
+            } else if (n === 2) {
+                title.textContent = 'Neraca';
+                content.innerHTML = renderNeraca();
+            } else if (n === 3) {
+                title.textContent = 'Buku Besar';
+                content.innerHTML = renderBukuBesar();
+            } else if (n === 4) {
+                title.textContent = 'Arus Kas';
+                content.innerHTML = renderArusKas();
+            }
+        }
+
+        function renderRecentTable() {
+            const tbody = document.getElementById('recent-table');
+            if (!tbody) return;
+            let html = '';
+            transactions.slice(0, 4).forEach(t => {
+                const color = t.type === 'income' ? 'text-emerald-400' : 'text-red-400';
+                const sign = t.type === 'income' ? '+' : '-';
+                html += `<tr class="hover:bg-gray-800">
+                    <td class="p-5">${t.date}</td>
+                    <td class="p-5">${t.desc}</td>
+                    <td class="p-5">${t.account}</td>
+                    <td class="p-5 text-right ${color}">${sign} Rp ${t.amount.toLocaleString('id-ID')}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function addTransaction() {
+            const date = document.getElementById('date').value;
+            const desc = document.getElementById('desc').value || 'Transaksi baru';
+            const type = document.getElementById('type').value;
+            const amount = parseInt(document.getElementById('amount').value) || 0;
+
+            if (amount === 0) {
+                alert('Masukkan jumlah!');
+                return;
+            }
+
+            const newTrans = {
+                id: Date.now(),
+                date: date,
+                desc: desc,
+                type: type,
+                amount: amount,
+                account: type === 'income' ? 'Pendapatan' : 'Beban Operasional'
+            };
+
+            transactions.unshift(newTrans);
+            alert('Transaksi berhasil disimpan! (data dummy di-memory)');
+
+            // Switch back to dashboard to see update
+            switchTab(0);
+        }
+
+        function refreshData() {
+            alert('Data di-refresh (dummy)');
+            switchTab(0); // refresh dashboard
+        }
+
+        // Init
+        window.onload = () => {
+            switchTab(0);
+        };
+    </script>
+</body>
+</html> 
